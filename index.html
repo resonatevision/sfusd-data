@@ -1294,6 +1294,7 @@
 
         const fundingItems = [
             { label: 'Site Discretionary', key: 'site_discretionary', value: school.funding.site_discretionary },
+            { label: 'TK Startup', key: 'tk_startup', value: school.funding.tk_startup || 0 },
             { label: 'Focal Student', key: 'focal_student', value: school.funding.focal_student },
             { label: 'Title I Allocation', key: 'title_i', value: school.title_i_allocation, lyValue: lastYear ? lastYear.title_i_allocation : null },
             { label: 'Library Per Pupil', key: 'library_per_pupil', value: school.funding.library_per_pupil },
@@ -1304,7 +1305,13 @@
             { label: 'Student Success Fund', key: 'student_success_fund', value: school.funding.student_success_fund, status: getGrantStatus('student_success_fund') },
             { label: 'ESSA-CSI', key: 'essa_csi', value: 0, status: getGrantStatus('essa_csi') },
             { label: 'LCFF Equity Multiplier', key: 'equity_multiplier', value: 0, status: getGrantStatus('equity_multiplier') }
-        ].filter(item => item.value > 0 || item.status === 'TBD');
+        ].filter(item => {
+            // Show if has value, or is TBD, or had value last year (to show YoY loss)
+            if (item.value > 0 || item.status === 'TBD') return true;
+            // Show if last year had a value (for YoY comparison)
+            const lyVal = item.lyValue !== undefined ? item.lyValue : (lastYear && lastYear.funding ? lastYear.funding[item.key] : null);
+            return lyVal && lyVal > 0;
+        });
 
         // Add estimated spending
         const estSpending = calcEstimatedSpending(school);
