@@ -680,8 +680,10 @@
                     <option value="spending_per_pupil_desc">Est. $/Student (High to Low)</option>
                     <option value="spending_per_pupil_asc">Est. $/Student (Low to High)</option>
                     <option value="teachers_desc">Teachers (High to Low)</option>
-                    <option value="yoy_gain">YoY Gain (Most to Least)</option>
-                    <option value="yoy_loss">YoY Loss (Most to Least)</option>
+                    <option value="yoy_enrollment_desc">YoY Enrollment Change (Growing)</option>
+                    <option value="yoy_enrollment_asc">YoY Enrollment Change (Shrinking)</option>
+                    <option value="yoy_spending_desc">YoY $/Student Change (Increasing)</option>
+                    <option value="yoy_spending_asc">YoY $/Student Change (Decreasing)</option>
                 </select>
             </div>
             <div class="control-group">
@@ -1078,25 +1080,41 @@
                 case 'teachers_desc':
                     result = b.staffing.classroom_teachers - a.staffing.classroom_teachers;
                     break;
-                case 'yoy_gain':
-                    // Sort by spending per pupil increase (highest gain first)
-                    const gainA = getSpendingPerPupilChange(a);
-                    const gainB = getSpendingPerPupilChange(b);
-                    // Schools without last year data go to end
-                    if (gainA === null && gainB === null) return 0;
-                    if (gainA === null) return 1;
-                    if (gainB === null) return -1;
-                    result = gainB - gainA;
+                case 'yoy_enrollment_desc':
+                    // Sort by enrollment change (highest growth first)
+                    const enrollGrowthA = getYoYPercentChange(a.enrollment_total, findLastYearSchool(a)?.enrollment_total);
+                    const enrollGrowthB = getYoYPercentChange(b.enrollment_total, findLastYearSchool(b)?.enrollment_total);
+                    if (enrollGrowthA === null && enrollGrowthB === null) return 0;
+                    if (enrollGrowthA === null) return 1;
+                    if (enrollGrowthB === null) return -1;
+                    result = enrollGrowthB - enrollGrowthA;
                     break;
-                case 'yoy_loss':
-                    // Sort by spending per pupil decrease (biggest loss first)
-                    const lossA = getSpendingPerPupilChange(a);
-                    const lossB = getSpendingPerPupilChange(b);
-                    // Schools without last year data go to end
-                    if (lossA === null && lossB === null) return 0;
-                    if (lossA === null) return 1;
-                    if (lossB === null) return -1;
-                    result = lossA - lossB;
+                case 'yoy_enrollment_asc':
+                    // Sort by enrollment change (biggest decline first)
+                    const enrollDeclineA = getYoYPercentChange(a.enrollment_total, findLastYearSchool(a)?.enrollment_total);
+                    const enrollDeclineB = getYoYPercentChange(b.enrollment_total, findLastYearSchool(b)?.enrollment_total);
+                    if (enrollDeclineA === null && enrollDeclineB === null) return 0;
+                    if (enrollDeclineA === null) return 1;
+                    if (enrollDeclineB === null) return -1;
+                    result = enrollDeclineA - enrollDeclineB;
+                    break;
+                case 'yoy_spending_desc':
+                    // Sort by $/student change (highest increase first)
+                    const spendIncA = getSpendingPerPupilChange(a);
+                    const spendIncB = getSpendingPerPupilChange(b);
+                    if (spendIncA === null && spendIncB === null) return 0;
+                    if (spendIncA === null) return 1;
+                    if (spendIncB === null) return -1;
+                    result = spendIncB - spendIncA;
+                    break;
+                case 'yoy_spending_asc':
+                    // Sort by $/student change (biggest decrease first)
+                    const spendDecA = getSpendingPerPupilChange(a);
+                    const spendDecB = getSpendingPerPupilChange(b);
+                    if (spendDecA === null && spendDecB === null) return 0;
+                    if (spendDecA === null) return 1;
+                    if (spendDecB === null) return -1;
+                    result = spendDecA - spendDecB;
                     break;
                 default:
                     return 0;
@@ -1565,5 +1583,3 @@
     </script>
 </body>
 </html>
-
-
