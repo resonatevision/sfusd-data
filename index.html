@@ -649,7 +649,7 @@
             </div>
             <div class="stat-card">
                 <div class="value" id="avgUPC">0%</div>
-                <div class="label">Avg Low-Income %</div>
+                <div class="label">Avg Low-Income & EL %</div>
             </div>
         </div>
 
@@ -674,9 +674,10 @@
                     <option value="name">Name (A-Z)</option>
                     <option value="enrollment_desc">Enrollment (High to Low)</option>
                     <option value="enrollment_asc">Enrollment (Low to High)</option>
-                    <option value="upc_desc">Low-Income % (High to Low)</option>
-                    <option value="upc_asc">Low-Income % (Low to High)</option>
-                    <option value="title_i_desc">Title I Funding (High to Low)</option>
+                    <option value="upc_desc">Low-Income & EL % (High to Low)</option>
+                    <option value="upc_asc">Low-Income & EL % (Low to High)</option>
+                    <option value="low_income_count_desc">Low-Income & EL Students (High to Low)</option>
+                    <option value="low_income_count_asc">Low-Income & EL Students (Low to High)</option>
                     <option value="spending_per_pupil_desc">Est. $/Student (High to Low)</option>
                     <option value="spending_per_pupil_asc">Est. $/Student (Low to High)</option>
                     <option value="teachers_desc">Teachers (High to Low)</option>
@@ -734,6 +735,8 @@
     <footer>
         <p>Data source: <a href="https://www.sfusd.edu/about-sfusd/budget-and-lcap/district-budget-stabilization-town-halls-homepage" target="_blank">SFUSD Budget Website</a></p>
         <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.85rem;">Preliminary allocations - subject to change. Dashboard created for informational purposes.</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.85rem;"><strong>Title I</strong> is a federal program providing additional funding to schools with high percentages of students from low-income families.</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.85rem;"><strong>Note:</strong> "Est. $/Student" does not include many expenses such as central office spending, facilities maintenance, transportation, food services, and district-wide programs.</p>
 
         <details style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.85;">
             <summary style="cursor: pointer; font-weight: 600;">Salary Assumptions for "Est. $/Student" (click to expand)</summary>
@@ -1068,8 +1071,11 @@
                 case 'upc_asc':
                     result = (a.unduplicated_pupil_percentage * 100) - (b.unduplicated_pupil_percentage * 100);
                     break;
-                case 'title_i_desc':
-                    result = b.title_i_allocation - a.title_i_allocation;
+                case 'low_income_count_desc':
+                    result = (b.enrollment_total * b.unduplicated_pupil_percentage / 100) - (a.enrollment_total * a.unduplicated_pupil_percentage / 100);
+                    break;
+                case 'low_income_count_asc':
+                    result = (a.enrollment_total * a.unduplicated_pupil_percentage / 100) - (b.enrollment_total * b.unduplicated_pupil_percentage / 100);
                     break;
                 case 'spending_per_pupil_desc':
                     result = calcSpendingPerPupil(b) - calcSpendingPerPupil(a);
@@ -1169,10 +1175,15 @@
         let enrollmentLastYear = '';
         let lowIncomeYoY = '';
         let lowIncomeLastYear = '';
+        let lowIncomeCountYoY = '';
+        let lowIncomeCountLastYear = '';
         let teachersYoY = '';
         let teachersLastYear = '';
         let spendingYoY = '';
         let spendingLastYear = '';
+
+        // Calculate low-income student count
+        const lowIncomeCount = Math.round(school.enrollment_total * school.unduplicated_pupil_percentage / 100);
 
         if (lastYear) {
             const enrollPct = getYoYPercentChange(school.enrollment_total, lastYear.enrollment_total);
@@ -1185,6 +1196,13 @@
             lowIncomeYoY = renderYoYArrow(lowIncomePct);
             if (lowIncomePct !== null && Math.abs(lowIncomePct) >= 0.5) {
                 lowIncomeLastYear = `<span class="last-year-value">was ${formatPercent(lastYear.unduplicated_pupil_percentage)}</span>`;
+            }
+
+            const lastLowIncomeCount = Math.round(lastYear.enrollment_total * lastYear.unduplicated_pupil_percentage / 100);
+            const lowIncomeCountPct = getYoYPercentChange(lowIncomeCount, lastLowIncomeCount);
+            lowIncomeCountYoY = renderYoYArrow(lowIncomeCountPct);
+            if (lowIncomeCountPct !== null && Math.abs(lowIncomeCountPct) >= 0.5) {
+                lowIncomeCountLastYear = `<span class="last-year-value">was ${formatNumber(lastLowIncomeCount)}</span>`;
             }
 
             const teachersPct = getYoYPercentChange(school.staffing.classroom_teachers, lastYear.staffing.classroom_teachers);
@@ -1217,9 +1235,14 @@
                         ${enrollmentLastYear}
                     </div>
                     <div class="metric">
-                        <span class="label">Low-Income %</span>
+                        <span class="label">Low-Income & EL %</span>
                         <span class="value ${school.unduplicated_pupil_percentage > 75 ? 'highlight' : ''}">${formatPercent(school.unduplicated_pupil_percentage)}${lowIncomeYoY}</span>
                         ${lowIncomeLastYear}
+                    </div>
+                    <div class="metric">
+                        <span class="label">Low-Income & EL #</span>
+                        <span class="value">${formatNumber(lowIncomeCount)}${lowIncomeCountYoY}</span>
+                        ${lowIncomeCountLastYear}
                     </div>
                     <div class="metric">
                         <span class="label">Teachers</span>
@@ -1500,7 +1523,7 @@
 
         const metrics = [
             { label: 'Total Students', key: 'enrollment_total', format: formatNumber },
-            { label: 'Low-Income %', key: 'unduplicated_pupil_percentage', format: formatPercent },
+            { label: 'Low-Income & EL %', key: 'unduplicated_pupil_percentage', format: formatPercent },
             { label: 'Title I Funding', key: 'title_i_allocation', format: formatCurrency },
             { label: 'Classroom Teachers', key: 'staffing.classroom_teachers', format: v => v },
             { label: 'Total Staff FTE', key: 'staffing.total_fte', format: v => v.toFixed(1) },
