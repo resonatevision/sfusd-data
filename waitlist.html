@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFUSD Waitlist Tracker 2025-26</title>
+    <script src="data/waitlist_data.js"></script>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --secondary: #c53030;
+            --accent: #38a169;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --red: #e53e3e;
+            --green: #38a169;
+            --orange: #dd6b20;
+            --blue: #3182ce;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6;
+        }
+
+        header {
+            background: var(--primary); color: white; padding: 1.5rem; text-align: center;
+        }
+        header h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+        header p { opacity: 0.9; font-size: 0.9rem; }
+        header a { color: #90cdf4; text-decoration: none; }
+        header a:hover { text-decoration: underline; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+
+        /* (stats banner removed) */
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .tab {
+            padding: 0.75rem 1.5rem; border: none; background: var(--card-bg);
+            color: var(--text); cursor: pointer; border-radius: 8px 8px 0 0;
+            font-size: 0.9rem; border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .tab:hover { background: #edf2f7; }
+        .tab.active { background: var(--primary); color: white; border-bottom-color: var(--secondary); }
+        .tab .count {
+            background: rgba(0,0,0,0.1); padding: 0.125rem 0.5rem;
+            border-radius: 10px; font-size: 0.75rem; margin-left: 0.5rem;
+        }
+        .tab.active .count { background: rgba(255,255,255,0.2); }
+
+        /* Controls */
+        .controls {
+            background: var(--card-bg); padding: 1rem; border-radius: 8px;
+            margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 0.25rem; }
+        .control-group label {
+            font-size: 0.75rem; font-weight: 600; color: var(--text-light); text-transform: uppercase;
+        }
+        select, input[type="text"] {
+            padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+            border-radius: 4px; font-size: 0.9rem; min-width: 150px;
+        }
+        select:focus, input:focus { outline: none; border-color: var(--primary); }
+
+        /* School list — single column, full width */
+        .school-list { display: flex; flex-direction: column; gap: 1rem; }
+
+        /* School card */
+        .school-card {
+            background: var(--card-bg); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .school-header {
+            padding: 0.75rem 1rem; cursor: pointer; display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid transparent;
+            transition: background 0.15s;
+        }
+        .school-header:hover { background: #f7fafc; }
+        .school-card.open .school-header { border-bottom-color: var(--border); }
+        .school-name { font-size: 1.05rem; font-weight: 600; }
+        .school-grades {
+            font-size: 0.8rem; color: var(--text-light); margin-top: 2px;
+        }
+        .toggle-icon {
+            font-size: 0.7rem; color: var(--text-light); transition: transform 0.2s;
+            flex-shrink: 0; margin-left: 1rem;
+        }
+        .school-card.open .toggle-icon { transform: rotate(180deg); }
+
+        /* Detail area */
+        .school-detail { display: none; }
+        .school-card.open .school-detail { display: block; }
+
+        /* Grade section */
+        .grade-section { border-bottom: 1px solid var(--border); }
+        .grade-section:last-child { border-bottom: none; }
+        .grade-header {
+            padding: 0.5rem 1rem; background: #edf2f7; font-weight: 700;
+            font-size: 0.8rem; color: var(--primary); text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Program table */
+        .program-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+        .program-table col.col-program { width: auto; }
+        .program-table col.col-num { width: 90px; }
+        .program-table col.col-change { width: 80px; }
+        .program-table col.col-cleared { width: 120px; }
+        .program-table th {
+            text-align: left; padding: 0.4rem 1rem; font-size: 0.7rem;
+            color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px;
+            font-weight: 600; background: #f7fafc; border-bottom: 1px solid var(--border);
+        }
+        .program-table th.num { text-align: right; padding-right: 1.25rem; }
+        .program-table td { padding: 0.6rem 1rem; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+        .program-table tr:last-child td { border-bottom: none; }
+        .program-table tr:hover td { background: #fafcff; }
+        .program-table td.num { text-align: right; padding-right: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .program-table td.prog-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Delta chip */
+        .delta-chip {
+            display: inline-block; font-size: 0.75rem; font-weight: 600;
+            padding: 0.1rem 0.5rem; border-radius: 3px; white-space: nowrap;
+        }
+        .delta-chip.grew { background: #fff5f5; color: var(--red); }
+        .delta-chip.shrunk { background: #f0fff4; color: var(--green); }
+        .delta-chip.same { background: #f7fafc; color: var(--text-light); }
+
+
+        /* No results */
+        .no-results {
+            text-align: center; padding: 3rem; color: var(--text-light); display: none;
+        }
+        .no-results h3 { margin-bottom: 0.5rem; }
+
+        footer {
+            background: var(--primary); color: white; padding: 1rem;
+            text-align: center; margin-top: 2rem; font-size: 0.85rem;
+        }
+        footer a { color: #90cdf4; }
+
+        @media (max-width: 768px) {
+            .controls { flex-direction: column; align-items: stretch; }
+            select, input[type="text"] { width: 100%; }
+            .program-table { font-size: 0.78rem; }
+            .program-table th, .program-table td { padding: 0.4rem 0.5rem; }
+            .prog-name { max-width: 160px !important; }
+            .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SFUSD Waitlist Tracker 2025-26</h1>
+        <p>Current waitlist positions by school, grade & program &middot; <a href="index.html">TK-K Dashboard</a></p>
+    </header>
+
+    <div class="container">
+        <div class="tabs" id="tabs"></div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Search</label>
+                <input type="text" id="searchInput" placeholder="Search schools...">
+            </div>
+            <div class="control-group">
+                <label>Grade</label>
+                <select id="gradeFilter"><option value="">All Grades</option></select>
+            </div>
+            <div class="control-group">
+                <label>Sort By</label>
+                <select id="sortSelect">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="waitlist_desc">Largest Waitlist First</option>
+                    <option value="waitlist_asc">Smallest Waitlist First</option>
+                    <option value="movement">Most Movement</option>
+                    <option value="cleared_desc">Most Cleared Last Year</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="school-list" id="schoolList"></div>
+        <div class="no-results" id="noResults">
+            <h3>No schools found</h3>
+            <p>Try adjusting your search or filters</p>
+        </div>
+    </div>
+
+    <footer>
+        Data from SFUSD enrollment files, 2025-26 cycle. "Cleared last yr" = offers made from waitlist during 2024-25.
+        <br><a href="index.html">Back to TK-K Dashboard</a>
+    </footer>
+
+<script>
+const GRADE_ORDER = ['PK','TK','K','1','2','3','4','5','6','7','8','9','10','11','12','5th YR Senior'];
+
+function gradeSort(a, b) {
+    const ai = GRADE_ORDER.indexOf(a), bi = GRADE_ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+}
+
+// Canonical school names (matching sfusd-budget)
+const CANONICAL_NAMES = {
+    'Access SFUSD: Bay Street': 'Access SFUSD: Bay Street',
+    'Access SFUSD: The Arc': 'Access SFUSD: The Arc',
+    'Alamo ES': 'Alamo E.S.',
+    'Alvarado ES': 'Alvarado E.S.',
+    'Aptos MS': 'Aptos M.S.',
+    'Argonne EES': 'Argonne E.S.',
+    'Argonne ES': 'Argonne E.S.',
+    'Asawa (Ruth) SOTA HS': 'Ruth Asawa School of the Arts',
+    'Balboa HS': 'Balboa H.S.',
+    'Brown Jr. (Willie) MS': 'Willie Brown M.S.',
+    'Bryant ES': 'Bryant E.S.',
+    'Buena Vista Horace Mann K-8': 'Buena Vista Horace Mann K-8',
+    'Burton (Phillip and Sala) HS': 'Phillip & Sala Burton H.S.',
+    'Carmichael (Bessie) K-8': 'Bessie Carmichael E.S.',
+    'Carver (Dr George W) ES': 'George W.Carver E.S.',
+    'Chavez (Cesar) ES': 'Cesar Chavez E.S.',
+    'Chin (John Yehall) ES': 'John Yehall Chin E.S.',
+    'Chinese Immersion School at DeAvila ES': 'Chinese Immersion E.S.',
+    'Clarendon ES': 'Clarendon E.S.',
+    'Cleveland ES': 'Cleveland E.S.',
+    'Cobb (Dr William L) ES': 'Dr.William Cobb E.S.',
+    'Denman (James) MS': 'James Denman M.S.',
+    'Drew (Dr Charles) College Preparatory Academy ES': 'Dr.Charles Drew E.S.',
+    'El Dorado ES': 'El Dorado E.S.',
+    'Everett MS': 'Everett M.S.',
+    'Excelsior At Guadalupe EES': 'Guadalupe E.S.',
+    'Feinstein (Dianne) ES': 'Dianne Feinstein E.S.',
+    'Flynn (Leonard R) ES': 'Leonard R. Flynn E.S.',
+    'Francisco MS': 'Francisco M.S.',
+    'Galileo HS': 'Galileo H.S.',
+    'Garfield ES': 'Garfield E.S.',
+    'Giannini (A.P.) MS': 'A.P. Giannini M.S.',
+    'Glen Park ES': 'Glen Park E.S.',
+    'Grattan ES': 'Grattan E.S.',
+    'Guadalupe ES': 'Guadalupe E.S.',
+    'Harte (Bret) ES': 'Bret Harte E.S.',
+    'Hillcrest ES': 'Hillcrest E.S.',
+    'Hoover (Herbert) MS': 'Herbert Hoover M.S.',
+    'Huerta (Dolores) ES': 'Dolores Huerta E.S.',
+    'Jefferson ES': 'Jefferson E.S.',
+    'Jordan (June) HS': 'June Jordan School For Equity',
+    'Key (Francis Scott) ES': 'Francis Key E.S.',
+    'King (Thomas Starr) ES': 'Starr King E.S.',
+    'King Jr (Dr Martin L) MS': 'Martin Luther King Jr. M.S.',
+    'Lafayette ES': 'Lafayette E.S.',
+    'Lakeshore ES': 'Lakeshore E.S.',
+    'Lau (Gordon J) ES': 'Gordon J. Lau E.S.',
+    'Lawton K-8': 'Lawton K-8',
+    'Lick (James) MS': 'James Lick M.S.',
+    'Lilienthal (Claire) K-8': 'Claire Lilienthal K-8',
+    'Lincoln (Abraham) HS': 'Abraham Lincoln H.S.',
+    'Longfellow ES': 'Longfellow E.S.',
+    'Lowell HS': 'Lowell H.S.',
+    'Malcolm X Academy ES': 'Malcolm X E.S.',
+    'Marina MS': 'Marina M.S.',
+    'Marshall (Thurgood) HS': 'Thurgood Marshall H.S.',
+    'Marshall ES': 'Marshall E.S.',
+    'McCoppin (Frank) ES': 'Frank McCoppin E.S.',
+    'McKinley ES': 'McKinley E.S.',
+    'McLaren (John) EES': 'McLaren E.S.',
+    'Milk (Harvey) Civil Right ES': 'Harvey Milk E.S.',
+    'Miraloma ES': 'Miraloma E.S.',
+    'Mission Bay ES': 'Mission Bay E.S.',
+    'Mission Education Center ES': 'Mission Education Center E.S.',
+    'Mission HS': 'Mission H.S.',
+    'Monroe ES': 'Monroe E.S.',
+    'Moscone (George R) ES': 'George Moscone E.S.',
+    'Muir (John) ES': 'John Muir E.S.',
+    'New Traditions ES': 'New Traditions E.S.',
+    'Noriega EES': 'Noriega E.S.',
+    'O\'Connell (John) HS': 'John O\'Connell H.S.',
+    'Ortega (Jose) ES': 'Jose Ortega E.S.',
+    'Parker (Jean) ES': 'Jean Parker E.S.',
+    'Parks (Rosa) ES': 'Rosa Parks E.S.',
+    'Peabody (George) ES': 'George Peabody E.S.',
+    'Presidio MS': 'Presidio M.S.',
+    'Redding ES': 'Redding E.S.',
+    'Revere (Paul) K-8': 'Paul Revere K-8',
+    'Rodriguez (Zaida T) EES': 'Rodriguez E.S.',
+    'Rooftop K-8': 'Rooftop K-8',
+    'Roosevelt MS': 'Roosevelt M.S.',
+    'SF Community K-8': 'S.F. Community K-8',
+    'SF International HS': 'S.F. International H.S.',
+    'SF Public Montessori ES': 'San Francisco Montessori E.S.',
+    'San Miguel EES': 'San Miguel E.S.',
+    'Sanchez ES': 'Sanchez E.S.',
+    'Serra (Junipero) Annex EES': 'Junipero Serra Annex E.S.',
+    'Serra (Junipero) ES': 'Junipero Serra E.S.',
+    'Sheridan ES': 'Sheridan E.S.',
+    'Sheridan PreK': 'Sheridan E.S. PreK',
+    'Sherman ES': 'Sherman E.S.',
+    'Sloat (Commodore) ES': 'Commodore Sloat E.S.',
+    'Spring Valley Science ES': 'Spring Valley E.S.',
+    'Stevenson (Robert Louis) ES': 'R.L. Stevenson E.S.',
+    'Stockton (Commodore) EES': 'Stockton E.S.',
+    'Sunnyside ES': 'Sunnyside E.S.',
+    'Sunset ES': 'Sunset E.S.',
+    'Sutro ES': 'Sutro E.S.',
+    'Taylor (Edward R) ES': 'E.R.Taylor E.S.',
+    'Taylor (Edward R) PreK': 'E.R.Taylor PreK',
+    'Tenderloin Community ES': 'Tenderloin E.S.',
+    'Tule Elk Park EES': 'Tule Elk Park E.S.',
+    'Ulloa ES': 'Ulloa E.S.',
+    'Visitacion Valley ES': 'Visitacion Valley E.S.',
+    'Visitacion Valley MS': 'Visitacion Valley M.S.',
+    'Wallenberg (Raoul) HS': 'Raoul Wallenberg H.S.',
+    'Washington (George) HS': 'George Washington H.S.',
+    'Webster (Daniel) ES': 'Daniel Webster E.S.',
+    'Wells (Ida B) HS': 'Ida B. Wells H.S.',
+    'West Portal ES': 'West Portal E.S.',
+    'Wo (Yick) ES': 'Yick Wo E.S.',
+    'Yu (Alice Fong) K-8': 'Alice Fong Yu K-8'
+};
+
+function canonicalName(raw) {
+    return CANONICAL_NAMES[raw] || raw;
+}
+
+function classifySchool(name) {
+    if (/Access SFUSD/i.test(name)) return 'high';
+    if (/K-8|K8|PK-8/i.test(name)) return 'k8';
+    if (/\bMS\b|M\.S\.|Middle/i.test(name)) return 'middle';
+    if (/\bHS\b|H\.S\.|High|School of the Arts|School For Equity/i.test(name)) return 'high';
+    if (/\bES\b|E\.S\.|Elementary|PreK/i.test(name)) return 'elementary';
+    return 'other';
+}
+
+// Build school-level data
+const schoolMap = {};
+WAITLIST_DATA.forEach(d => {
+    const cName = canonicalName(d.school_name);
+    if (!schoolMap[cName]) {
+        schoolMap[cName] = {
+            name: cName, code: d.school_code,
+            type: classifySchool(cName),
+            programs: [], grades: new Set()
+        };
+    }
+    schoolMap[cName].programs.push(d);
+    schoolMap[cName].grades.add(d.grade);
+});
+
+const schools = Object.values(schoolMap);
+schools.forEach(s => {
+    if (s.type === 'other') {
+        const grades = [...s.grades];
+        const hasElem = grades.some(g => ['PK','TK','K','1','2','3','4','5'].includes(g));
+        const hasMiddle = grades.some(g => ['6','7','8'].includes(g));
+        const hasHigh = grades.some(g => ['9','10','11','12','5th YR Senior'].includes(g));
+        if (hasHigh) s.type = 'high';
+        else if (hasElem && hasMiddle) s.type = 'k8';
+        else if (hasMiddle) s.type = 'middle';
+        else s.type = 'elementary';
+    }
+    s.totalWaitlist = s.programs.reduce((sum, p) => sum + p.current_waitlist, 0);
+    s.totalInitial = s.programs.reduce((sum, p) => sum + p.initial_waitlist, 0);
+    s.totalLastYear = s.programs.reduce((sum, p) => sum + p.last_year_offers, 0);
+    s.netChange = s.totalWaitlist - s.totalInitial;
+    s.totalMovement = s.programs.reduce((sum, p) => sum + Math.abs(p.current_waitlist - p.initial_waitlist), 0);
+});
+
+
+// ── Tabs ──
+let activeType = 'all';
+function renderTabs() {
+    const counts = { all: schools.length, elementary: 0, k8: 0, middle: 0, high: 0 };
+    schools.forEach(s => { if (counts[s.type] !== undefined) counts[s.type]++; });
+
+    const tabDefs = [
+        ['all', 'All Schools'], ['elementary', 'Elementary'], ['k8', 'K-8'],
+        ['middle', 'Middle'], ['high', 'High']
+    ];
+    document.getElementById('tabs').innerHTML = tabDefs.map(([type, label]) =>
+        `<button class="tab ${type === activeType ? 'active' : ''}" data-type="${type}">
+            ${label} <span class="count">${counts[type]}</span>
+        </button>`
+    ).join('');
+
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeType = btn.dataset.type;
+            renderTabs();
+            renderGrid();
+        });
+    });
+}
+
+// ── Grade Filter ──
+const allGrades = [...new Set(WAITLIST_DATA.map(d => d.grade))].sort(gradeSort);
+const gradeSelect = document.getElementById('gradeFilter');
+allGrades.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g; opt.textContent = g;
+    gradeSelect.appendChild(opt);
+});
+
+// ── Filtering & Sorting ──
+function getFilteredSchools() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const grade = document.getElementById('gradeFilter').value;
+    const sort = document.getElementById('sortSelect').value;
+
+    let filtered = schools.filter(s => {
+        if (activeType !== 'all' && s.type !== activeType) return false;
+        if (search && !s.name.toLowerCase().includes(search)) return false;
+        if (grade && !s.grades.has(grade)) return false;
+        return true;
+    });
+
+    filtered.sort((a, b) => {
+        switch (sort) {
+            case 'name': return a.name.localeCompare(b.name);
+            case 'waitlist_desc': return b.totalWaitlist - a.totalWaitlist;
+            case 'waitlist_asc': return a.totalWaitlist - b.totalWaitlist;
+            case 'movement': return b.totalMovement - a.totalMovement;
+            case 'cleared_desc': return b.totalLastYear - a.totalLastYear;
+            default: return 0;
+        }
+    });
+
+    return filtered;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function cleanProgramName(name) {
+    // TK Feeder names like "Alvarado ES TK Feeder - Spanish Immersion (Non-Native)"
+    // → "TK Feeder to Alvarado E.S. — Spanish Immersion (Non-Native)"
+    const feederMatch = name.match(/^(.+?)\s+TK Feeder\s*-\s*(.+)$/);
+    if (feederMatch) {
+        const dest = canonicalName(feederMatch[1]);
+        return `TK Feeder to ${dest} — ${feederMatch[2]}`;
+    }
+    return name;
+}
+
+function renderGrid() {
+    const filtered = getFilteredSchools();
+    const gradeFilter = document.getElementById('gradeFilter').value;
+
+    const list = document.getElementById('schoolList');
+    const noResults = document.getElementById('noResults');
+
+    if (filtered.length === 0) {
+        list.innerHTML = '';
+        noResults.style.display = 'block';
+        return;
+    }
+    noResults.style.display = 'none';
+
+    list.innerHTML = filtered.map(school => {
+        const programs = gradeFilter
+            ? school.programs.filter(p => p.grade === gradeFilter)
+            : school.programs;
+
+        // Group by grade
+        const byGrade = {};
+        programs.forEach(p => {
+            if (!byGrade[p.grade]) byGrade[p.grade] = [];
+            byGrade[p.grade].push(p);
+        });
+        const sortedGrades = Object.keys(byGrade).sort(gradeSort);
+
+        // Grade labels for collapsed view
+        const gradeLabels = sortedGrades.join(', ');
+
+        const gradeHtml = sortedGrades.map(grade => {
+            const gPrograms = byGrade[grade].sort((a, b) => b.current_waitlist - a.current_waitlist);
+
+            const rows = gPrograms.map(p => {
+                const delta = p.current_waitlist - p.initial_waitlist;
+                const deltaClass = delta > 0 ? 'grew' : delta < 0 ? 'shrunk' : 'same';
+                const deltaStr = delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '--';
+
+                return `<tr>
+                    <td class="prog-name">${escHtml(cleanProgramName(p.program_name))}</td>
+                    <td class="num">${p.current_waitlist}</td>
+                    <td class="num hide-mobile">${p.initial_waitlist}</td>
+                    <td class="num"><span class="delta-chip ${deltaClass}">${deltaStr}</span></td>
+                    <td class="num">${p.last_year_offers > 0
+                        ? `<span style="color:${p.last_year_offers >= p.initial_waitlist ? 'var(--green)' : 'var(--red)'}">${p.last_year_offers}</span>`
+                        : '--'}</td>
+                </tr>`;
+            }).join('');
+
+            return `<div class="grade-section">
+                <div class="grade-header">Grade ${grade}</div>
+                <table class="program-table">
+                    <colgroup>
+                        <col class="col-program">
+                        <col class="col-num">
+                        <col class="col-num hide-mobile">
+                        <col class="col-change">
+                        <col class="col-cleared">
+                    </colgroup>
+                    <thead><tr>
+                        <th>Program</th>
+                        <th class="num">Now</th>
+                        <th class="num hide-mobile">Initial</th>
+                        <th class="num">Change</th>
+                        <th class="num">Cleared Last Yr</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        }).join('');
+
+        return `<div class="school-card" data-school="${escHtml(school.name)}">
+            <div class="school-header">
+                <div>
+                    <div class="school-name">${escHtml(school.name)}</div>
+                    <div class="school-grades">Grades: ${escHtml(gradeLabels)}</div>
+                </div>
+                <span class="toggle-icon">&#9660;</span>
+            </div>
+            <div class="school-detail">${gradeHtml}</div>
+        </div>`;
+    }).join('');
+
+    document.querySelectorAll('.school-header').forEach(header => {
+        header.addEventListener('click', () => {
+            header.closest('.school-card').classList.toggle('open');
+        });
+    });
+}
+
+// ── Event Listeners ──
+let debounceTimer;
+document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(renderGrid, 200);
+});
+document.getElementById('gradeFilter').addEventListener('change', renderGrid);
+document.getElementById('sortSelect').addEventListener('change', renderGrid);
+
+// ── Init ──
+renderTabs();
+renderGrid();
+</script>
+</body>
+</html>
