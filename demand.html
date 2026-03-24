@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFUSD Wanted vs Unwanted Schools 2025-26</title>
+    <script src="data/demand_data.js"></script>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --blue: #3182ce;
+            --red: #e53e3e;
+            --orange: #dd6b20;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6;
+        }
+
+        header {
+            background: var(--primary); color: white; padding: 1.5rem; text-align: center;
+        }
+        header h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+        header p { opacity: 0.9; font-size: 0.9rem; }
+        header a { color: #90cdf4; text-decoration: none; }
+        header a:hover { text-decoration: underline; }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .tab {
+            padding: 0.75rem 1.5rem; border: none; background: var(--card-bg);
+            color: var(--text); cursor: pointer; border-radius: 8px 8px 0 0;
+            font-size: 0.9rem; border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .tab:hover { background: #edf2f7; }
+        .tab.active { background: var(--primary); color: white; border-bottom-color: var(--orange); }
+        .tab .count {
+            background: rgba(0,0,0,0.1); padding: 0.125rem 0.5rem;
+            border-radius: 10px; font-size: 0.75rem; margin-left: 0.5rem;
+        }
+        .tab.active .count { background: rgba(255,255,255,0.2); }
+
+        .legend {
+            display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem;
+            font-size: 0.85rem; color: var(--text-light);
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+        .chart-card {
+            background: var(--card-bg); border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1rem; overflow-x: auto;
+        }
+
+        .chart-header {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.75rem; color: var(--text-light); text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        .row {
+            display: flex; align-items: center; margin-bottom: 2px;
+            min-height: 26px; position: relative;
+        }
+        .row:hover { background: #f0f4f8; border-radius: 3px; }
+
+        .school-label {
+            width: 220px; flex-shrink: 0; text-align: right; padding-right: 8px;
+            font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        .bar-area {
+            flex: 1; display: flex; align-items: center; position: relative;
+        }
+        .bar-left { flex: 1; display: flex; justify-content: flex-end; }
+        .bar-right { flex: 1; display: flex; justify-content: flex-start; }
+        .bar-divider {
+            width: 2px; background: var(--border); height: 22px;
+            margin: 0 1px; flex-shrink: 0;
+        }
+
+        .bar {
+            height: 20px; border-radius: 3px;
+            min-width: 1px; transition: width 0.3s;
+        }
+        .bar.designated { background: var(--orange); }
+        .bar.waitlist { background: var(--blue); }
+
+        .bar-num {
+            font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+            color: var(--text); padding: 0 4px; flex-shrink: 0;
+        }
+        .bar-left .bar-num { order: -1; }
+
+        .desig-total {
+            text-align: center; padding: 0.75rem; margin-top: 0.75rem;
+            font-size: 0.9rem; color: var(--text-light);
+            border-top: 1px solid var(--border);
+        }
+        .desig-total strong { color: var(--orange); }
+
+        .tooltip-box {
+            display: none; position: fixed; background: var(--primary);
+            color: white; padding: 0.5rem 0.75rem; border-radius: 6px;
+            font-size: 0.8rem; z-index: 100; pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        }
+
+        .summary {
+            text-align: center; font-size: 0.85rem; color: var(--text-light);
+            margin-bottom: 1rem; padding: 0.75rem;
+            background: var(--card-bg); border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .summary strong { color: var(--text); }
+
+        footer {
+            background: var(--primary); color: white; padding: 1rem;
+            text-align: center; margin-top: 2rem; font-size: 0.85rem;
+        }
+        footer a { color: #90cdf4; }
+
+        @media (max-width: 768px) {
+            .school-label { width: 140px; font-size: 0.7rem; }
+            .bar { font-size: 0.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Wanted vs Unwanted Schools</h1>
+        <p>Schools families are trying to get into (waitlist) vs schools students are sent to without choosing (designation)</p>
+        <p><a href="index.html">TK-K Dashboard</a> &middot; <a href="waitlist.html">Waitlist Tracker</a></p>
+    </header>
+
+    <div class="container">
+        <div class="tabs" id="tabs"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-swatch" style="background: var(--orange);"></div>
+                <span>Designated (sent without choosing)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-swatch" style="background: var(--blue);"></div>
+                <span>Waitlisted (families trying to get in)</span>
+            </div>
+        </div>
+
+        <div class="summary" id="summary"></div>
+        <div class="chart-card" id="chartCard"></div>
+    </div>
+
+    <div class="tooltip-box" id="tooltip"></div>
+
+    <footer>
+        Data from SFUSD enrollment files, 2025-26 cycle. Designation = assigned to a school not on the family's choice list.
+        <br><a href="index.html">TK-K Dashboard</a> &middot; <a href="waitlist.html">Waitlist Tracker</a>
+    </footer>
+
+<script>
+const TABS = [
+    { key: 'tk', label: 'TK' },
+    { key: 'k', label: 'K' },
+    { key: 'g6', label: '6th' },
+    { key: 'g9', label: '9th' },
+];
+
+let activeTab = 'tk';
+const tooltip = document.getElementById('tooltip');
+
+function renderTabs() {
+    document.getElementById('tabs').innerHTML = TABS.map(t =>
+        `<button class="tab ${t.key === activeTab ? 'active' : ''}" data-key="${t.key}">
+            ${t.label} <span class="count">${DEMAND_DATA[t.key].length}</span>
+        </button>`
+    ).join('');
+
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeTab = btn.dataset.key;
+            renderTabs();
+            renderChart();
+        });
+    });
+}
+
+function renderChart() {
+    const data = DEMAND_DATA[activeTab];
+    if (!data || data.length === 0) {
+        document.getElementById('chartCard').innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-light)">No data for this grade.</p>';
+        document.getElementById('summary').innerHTML = '';
+        return;
+    }
+
+    const maxVal = Math.max(...data.map(d => d.waitlist), ...data.map(d => d.designated), 1);
+    const totalWaitlist = data.reduce((s, d) => s + d.waitlist, 0);
+    const totalDesig = data.reduce((s, d) => s + d.designated, 0);
+    const bothCount = data.filter(d => d.waitlist > 0 && d.designated > 0).length;
+
+    document.getElementById('summary').innerHTML =
+        `<strong>${totalWaitlist.toLocaleString()}</strong> students on waitlists across <strong>${data.filter(d => d.waitlist > 0).length}</strong> schools &mdash; ` +
+        `<strong>${totalDesig.toLocaleString()}</strong> students designated to <strong>${data.filter(d => d.designated > 0).length}</strong> schools` +
+        (bothCount > 0 ? ` &mdash; <strong>${bothCount}</strong> schools have both` : '');
+
+    let html = `<div class="chart-header">
+        <span style="flex:1;text-align:center;">&larr; Designated</span>
+        <span style="width:220px;"></span>
+        <span style="flex:1;text-align:center;">Waitlisted &rarr;</span>
+    </div>`;
+
+    data.forEach(d => {
+        const desigPct = (d.designated / maxVal) * 100;
+        const waitPct = (d.waitlist / maxVal) * 100;
+
+        html += `<div class="row" data-school="${esc(d.school_name)}" data-waitlist="${d.waitlist}" data-designated="${d.designated}">
+            <div class="bar-area">
+                <div class="bar-left">
+                    ${d.designated > 0 ? `<span class="bar-num">${d.designated}</span><div class="bar designated" style="width:${desigPct}%"></div>` : ''}
+                </div>
+                <div class="bar-divider"></div>
+                <div class="bar-right">
+                    ${d.waitlist > 0 ? `<div class="bar waitlist" style="width:${waitPct}%"></div><span class="bar-num">${d.waitlist}</span>` : ''}
+                </div>
+            </div>
+            <div class="school-label">${esc(d.school_name)}</div>
+        </div>`;
+    });
+
+    html += `<div class="desig-total">Total designated students: <strong>${totalDesig.toLocaleString()}</strong></div>`;
+
+    document.getElementById('chartCard').innerHTML = html;
+
+    // Tooltips
+    document.querySelectorAll('.row[data-school]').forEach(row => {
+        row.addEventListener('mouseenter', e => {
+            const name = row.dataset.school;
+            const w = row.dataset.waitlist;
+            const d = row.dataset.designated;
+            tooltip.innerHTML = `<strong>${name}</strong><br>Waitlisted: ${w}<br>Designated: ${d}`;
+            tooltip.style.display = 'block';
+        });
+        row.addEventListener('mousemove', e => {
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+        });
+        row.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+    });
+}
+
+function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+renderTabs();
+renderChart();
+</script>
+</body>
+</html>
